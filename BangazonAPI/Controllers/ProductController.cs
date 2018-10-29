@@ -1,13 +1,14 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
+using System.Threading.Tasks;
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Configuration;
 using System.Data;
 using System.Data.SqlClient;
 using BangazonAPI.Models;
-using System.Linq;
-using System.Threading.Tasks;
 using Dapper;
-using Microsoft.AspNetCore.Mvc;
-using Microsoft.Extensions.Configuration;
+using Microsoft.AspNetCore.Http;
 
 namespace BangazonAPI.Controllers
 {
@@ -35,12 +36,12 @@ namespace BangazonAPI.Controllers
         {
             string sql = @"
             SELECT 
-                p.Id
-                p.ProductTypeId
-                p.CustomerId
-                p.Price
-                p.Title
-                p.Description
+                p.Id,
+                p.ProductTypeId,
+                p.CustomerId,
+                p.Price,
+                p.Title,
+                p.Description,
                 p.Quantity
             FROM Product P
             WHERE 1=1";
@@ -63,9 +64,26 @@ namespace BangazonAPI.Controllers
 
         // GET api/<controller>/5
         [HttpGet("{id}")]
-        public string Get(int id)
+        public async Task<IActionResult> Get([FromRoute]int id)
         {
-            return "value";
+            string sql = $@"
+                SELECT 
+                    p.Id,
+                    p.ProductTypeId,
+                    p.CustomerId,
+                    p.Price,
+                    p.Title,
+                    p.Description,
+                    p.Quantity
+                FROM Product P
+                WHERE p.Id = {id}";
+
+            using (IDbConnection conn = Connection)
+            {
+
+                IEnumerable<Product> products = await conn.QueryAsync<Product>(sql);
+                return Ok(products);
+            }
         }
 
         // POST api/<controller>
