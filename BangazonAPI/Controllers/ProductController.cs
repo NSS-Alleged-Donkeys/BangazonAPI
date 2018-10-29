@@ -30,7 +30,7 @@ namespace BangazonAPI.Controllers
             }
         }
 
-        // GET: api/<controller>
+        // GET api/<controller>
         [HttpGet]
         public async Task<IActionResult> Get(string q)
         {
