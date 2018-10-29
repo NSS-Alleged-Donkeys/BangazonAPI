@@ -1,3 +1,4 @@
+/*
 DELETE FROM OrderProduct;
 DELETE FROM ComputerEmployee;
 DELETE FROM EmployeeTraining;
@@ -38,6 +39,7 @@ DROP TABLE IF EXISTS PaymentType;
 DROP TABLE IF EXISTS Product;
 DROP TABLE IF EXISTS ProductType;
 DROP TABLE IF EXISTS Customer;
+*/
 
 
 CREATE TABLE Department (
