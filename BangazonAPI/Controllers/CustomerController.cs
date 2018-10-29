@@ -65,7 +65,7 @@ namespace BangazonAPI.Controllers
 
         // GET api/Customer/5?_include=products
         [HttpGet("{id}", Name = "GetCustomer")]
-        public async Task<IActionResult> Get([FromRoute]int id, [FromRoute]string _include)
+        public async Task<IActionResult> Get([FromRoute]int id, string _include)
         {
             string sql = $@"
             SELECT
@@ -80,33 +80,36 @@ namespace BangazonAPI.Controllers
             {
                 if (_include == "products")
                 {
-                    Dictionary<string, List<Employee>> report = new Dictionary<string, List<Employee>>();
+                    Dictionary<int, Customer> report = new Dictionary<int, Customer>();
 
-                    IEnumerable<Department> deptsAndEmps = db.Query<Department, Employee, Department>(
-                        @"
-                    SELECT d.Id,
-                        d.DeptName,
-                        e.Id,
-                        e.FirstName,
-                        e.LastName,
-                        e.DepartmentId
-                    FROM Department d
-                    JOIN Employee e ON e.DepartmentId = d.Id
+                    IEnumerable<Customer> custAndProd = Connection.Query<Customer, Product, Customer>(
+                       $@"
+                    SELECT c.Id,
+                        c.FirstName,
+                        c.LastName,
+                        p.Id,
+                        p.Title,
+                        p.Price,
+                        p.Quantity,
+                        p.Description,
+                        p.ProductTypeId,
+                        p.CustomerId
+                    FROM Customer c
+                    JOIN Product p ON c.Id = p.CustomerId
+                    WHERE c.Id = {id};
                 ",
-                        (generatedDepartment, generatedEmployee) => {
-                            if (!report.ContainsKey(generatedDepartment.DeptName))
+                        (generatedCustomer, generatedProduct) => {
+                            if (!report.ContainsKey(generatedCustomer.Id))
                             {
-                                report[generatedDepartment.DeptName] = new List<Employee>();
+                                report[generatedCustomer.Id] = generatedCustomer;
                             }
-                            report[generatedDepartment.DeptName].Add(generatedEmployee);
+                            report[generatedCustomer.Id].Products.Add(generatedProduct);
 
-                            return generatedDepartment;
+                            return generatedCustomer;
                         }
                     );
 
-                    string isQ = $@"
-                    JOIN Product p ON p.CustomerId = c.Id";
-                    sql = $"{sql} {isQ}";
+                    return Ok(custAndProd);
                 }
             }
 
