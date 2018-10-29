@@ -17,6 +17,7 @@ namespace BangazonAPI.Controllers
     public class DepartmentController : ControllerBase
     {
         private readonly IConfiguration _config;
+        private object conn;
 
         public DepartmentController(IConfiguration config)
         {
@@ -31,70 +32,51 @@ namespace BangazonAPI.Controllers
             }
         }
 
-        // GET api/Department?_include=employees
         [HttpGet]
-        public async Task<IActionResult> Get(string _include, string filter)
+        public async Task<IActionResult> Get(string _include, string _filter, int _gt)
         {
-
-            string sql = "SELECT * FROM Department";
-
-            if (_include == "employees")
-
+            using (IDbConnection conn = Connection)
             {
-                Dictionary<int, Department> listOfDepartments = new Dictionary<int, Department>();
+                string sql = "SELECT * FROM Department";
 
-                sql = @"SELECT
+                if (_include == "employees")
+                {
+                    Dictionary<int, Department> listOfDepartments = new Dictionary<int, Department>();
+
+                    sql = @"SELECT
                             dpt.Id,
                             dpt.Name,
                             dpt.Budget,
                             e.Id,
                             e.FirstName,
                             e.LastName,
-                            e.DepartmentId
-                            e.IsSupervisor,
+                            e.DepartmentId,                       
+                            e.IsSupervisor
                             FROM Department dpt
                             JOIN Employee e ON dpt.Id = e.DepartmentId";
 
-
-                var departmentEmployees = await conn.QueryAsync<Department, Employee, Department>(sql,
-                    (department, employee) =>
-                    {
-                        if (!listOfDepartments.ContainsKey(department.Id))
+                    var departmentEmployees = await conn.QueryAsync<Department, Employee, Department>(sql,
+                        (department, employee) =>
                         {
-                            listOfDepartments[department.Id] = department;
-                        }
-                        listOfDepartments[department.Id].EmployeeList.Add(employee);
-                        return department;
-                    });
-                return Ok(listOfDepartments.Values);
-            }
+                            if (!listOfDepartments.ContainsKey(department.Id))
+                            {
+                                listOfDepartments[department.Id] = department;
+                            }
+                            listOfDepartments[department.Id].EmployeeList.Add(employee);
+                            return department;
+                        });
+                    return Ok(listOfDepartments.Values);
+                }
 
+                if (_filter == "budget" && _gt >= 100000)
+                {
 
-            string sql = @"
-            SELECT
-                dpt.Id,
-                dpt.Name,
-                dpt.Budget
-            FROM Department dpt
-            WHERE 1=1
-            ";
+                    sql = $@"SELECT * FROM Department WHERE Budget >= {_gt}";
 
-            if (q != null)
-            {
-                string isQ = $@"
-                    AND dpt.Name LIKE '%{q}%'
-                    OR dpt.Budget LIKE '%{q}%'
-                ";
-                sql = $"{sql} {isQ}";
-            }
+                }
 
-            Console.WriteLine(sql);
-
-            using (IDbConnection conn = Connection)
-            {
-
-                IEnumerable<Department> departments = await conn.QueryAsync<Department>(sql);
-                return Ok(departments);
+                var departmentBudget = await conn.QueryAsync<Department>(sql);
+                return Ok(departmentBudget);
             }
         }
 
