@@ -31,10 +31,45 @@ namespace BangazonAPI.Controllers
             }
         }
 
-        // GET api/Department?q=Taco
+        // GET api/Department?_include=employees
         [HttpGet]
-        public async Task<IActionResult> Get(string q)
+        public async Task<IActionResult> Get(string _include, string filter)
         {
+
+            string sql = "SELECT * FROM Department";
+
+            if (_include == "employees")
+
+            {
+                Dictionary<int, Department> listOfDepartments = new Dictionary<int, Department>();
+
+                sql = @"SELECT
+                            dpt.Id,
+                            dpt.Name,
+                            dpt.Budget,
+                            e.Id,
+                            e.FirstName,
+                            e.LastName,
+                            e.DepartmentId
+                            e.IsSupervisor,
+                            FROM Department dpt
+                            JOIN Employee e ON dpt.Id = e.DepartmentId";
+
+
+                var departmentEmployees = await conn.QueryAsync<Department, Employee, Department>(sql,
+                    (department, employee) =>
+                    {
+                        if (!listOfDepartments.ContainsKey(department.Id))
+                        {
+                            listOfDepartments[department.Id] = department;
+                        }
+                        listOfDepartments[department.Id].EmployeeList.Add(employee);
+                        return department;
+                    });
+                return Ok(listOfDepartments.Values);
+            }
+
+
             string sql = @"
             SELECT
                 dpt.Id,
