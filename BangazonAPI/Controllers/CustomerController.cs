@@ -103,13 +103,21 @@ namespace BangazonAPI.Controllers
                             {
                                 report[generatedCustomer.Id] = generatedCustomer;
                             }
+
                             report[generatedCustomer.Id].Products.Add(generatedProduct);
 
                             return generatedCustomer;
                         }
                     );
 
-                    return Ok(custAndProd);
+                    return Ok(report);
+                }
+
+                if (_include == "payment")
+                {
+                    Dictionary<int, Customer> report = new Dictionary<int, Customer>();
+
+
                 }
             }
 
@@ -118,6 +126,8 @@ namespace BangazonAPI.Controllers
                 IEnumerable<Customer> customer = await conn.QueryAsync<Customer>(sql);
                 return Ok(customer);
             }
+
+
         }
 
         // POST api/Customer
