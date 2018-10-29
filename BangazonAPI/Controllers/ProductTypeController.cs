@@ -80,7 +80,7 @@ namespace BangazonAPI.Controllers
             using (IDbConnection conn = Connection)
             {
                 IEnumerable<ProductType> productTypes = await conn.QueryAsync<ProductType>(sql);
-                return Ok(productTypes);
+                return Ok(productTypes.Single());
             }
         }
 

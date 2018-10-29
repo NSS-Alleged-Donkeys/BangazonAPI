@@ -31,6 +31,12 @@ namespace BangazonAPI.Controllers
             }
         }
 
+        //1. User should be able to GET a list, and GET a single item. DONE
+        //2. When an order is deleted, every line item(i.e.entry in OrderProduct) should be removed
+        //3. Should be able to filter out completed orders with the ?completed=false query string parameter.If the parameter value is true, then only completed order should be returned.
+        //4. If the query string parameter of? _include = products is in the URL, then the list of products in the order should be returned.
+        //5. If the query string parameter of? _include = customers is in the URL, then the customer representation should be included in the response.
+
         // GET api/Order?q=Taco
         [HttpGet]
         public async Task<IActionResult> Get()
@@ -39,8 +45,8 @@ namespace BangazonAPI.Controllers
             SELECT
                 o.Id,
                 o.CustomerId,
-                o.PaymentType
-            FROM Order o
+                o.PaymentTypeId
+            FROM [Order] o
             WHERE 1=1
             ";
 
@@ -73,50 +79,49 @@ namespace BangazonAPI.Controllers
                 o.Id,
                 o.CustomerId,
                 o.PaymentTypeId
-            FROM Order o
+            FROM [Order] o
             WHERE o.Id = {id}
             ";
 
             using (IDbConnection conn = Connection)
             {
                 IEnumerable<Order> orders = await conn.QueryAsync<Order>(sql);
-                return Ok(orders);
+                return Ok(orders.Single());
             }
         }
-    }
-}
-          /*
+
+        //GET WORKS
+          
+         //POST Works
         // POST api/paymentType
         [HttpPost]
-        public async Task<IActionResult> Post([FromBody] PaymentType paymentType)
+        public async Task<IActionResult> Post([FromBody] Order order)
         {
-            string sql = $@"INSERT INTO PaymentType 
-            (AcctNumber, Name, CustomerId)
+            string sql = $@"INSERT INTO [Order] 
+            (CustomerId, PaymentTypeId)
             VALUES
             (
-                '{paymentType.AcctNumber}'
-                ,'{paymentType.Name}'
-                ,'{paymentType.CustomerId}'
+                '{order.CustomerId}'
+                ,'{order.PaymentTypeId}'
             );
             SELECT SCOPE_IDENTITY();";
 
             using (IDbConnection conn = Connection)
             {
                 var newId = (await conn.QueryAsync<int>(sql)).Single();
-                paymentType.Id = newId;
-                return CreatedAtRoute("GetPayment", new { id = newId }, paymentType);
+                order.Id = newId;
+                return CreatedAtRoute("GetOrder", new { id = newId }, order);
             }
         }
 
         // PUT api/paymentType/5
         [HttpPut("{id}")]
-        public async Task<IActionResult> Put(int id, [FromBody] PaymentType paymentType)
+        public async Task<IActionResult> Put(int id, [FromBody] Order order)
         {
             string sql = $@"
-            UPDATE PaymentType
-            SET AcctNumber = '{paymentType.AcctNumber}',
-                Name = '{paymentType.Name}',
-                CustomerId = '{paymentType.CustomerId}'
+            UPDATE [Order]
+            SET CustomerId = '{order.CustomerId}',
+                PaymentTypeId = '{order.PaymentTypeId}'
             WHERE Id = {id}";
 
             try
@@ -133,7 +138,7 @@ namespace BangazonAPI.Controllers
             }
             catch (Exception)
             {
-                if (!PaymentTypeExists(id))
+                if (!OrderExists(id))
                 {
                     return NotFound();
                 }
@@ -144,11 +149,14 @@ namespace BangazonAPI.Controllers
             }
         }
 
+        //2. When an order is deleted, every line item (i.e. entry in OrderProduct) should be removed
         // DELETE api/paymentType/5
         [HttpDelete("{id}")]
         public async Task<IActionResult> Delete(int id)
         {
-            string sql = $@"DELETE FROM PaymentType WHERE Id = {id}";
+            string sql = $@"DELETE FROM OrderProduct WHERE OrderId = {id};
+                            DELETE FROM [Order] WHERE Id = {id};
+                            ";
 
             using (IDbConnection conn = Connection)
             {
@@ -162,14 +170,14 @@ namespace BangazonAPI.Controllers
 
         }
 
-        private bool PaymentTypeExists(int id)
+        private bool OrderExists(int id)
         {
-            string sql = $"SELECT Id FROM PaymentType WHERE Id = {id}";
+            string sql = $"SELECT Id FROM [Order] WHERE Id = {id}";
             using (IDbConnection conn = Connection)
             {
-                return conn.Query<PaymentType>(sql).Count() > 0;
+                return conn.Query<Order>(sql).Count() > 0;
             }
         }
     }
 }
-*/
+
