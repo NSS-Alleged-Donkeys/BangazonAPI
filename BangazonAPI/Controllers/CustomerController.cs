@@ -76,12 +76,16 @@ namespace BangazonAPI.Controllers
             WHERE c.Id = {id}
             ";
 
+            //If _include isn't in the route, this code won't be run
             if (_include != null)
             {
+                //If the route has ?_include=products, this code will run
                 if (_include == "products")
                 {
+                    //Here we are creating a new dictionary where the customer Id number will be the key. This way, we won't have multiple instances of each customer for each of their products.
                     Dictionary<int, Customer> report = new Dictionary<int, Customer>();
 
+                    //This is our query to the database to get the customer and their products. We are starting with a customer and a product, putting them together, and returning a customer
                     IEnumerable<Customer> custAndProd = Connection.Query<Customer, Product, Customer>(
                        $@"
                     SELECT c.Id,
@@ -98,18 +102,23 @@ namespace BangazonAPI.Controllers
                     JOIN Product p ON c.Id = p.CustomerId
                     WHERE c.Id = {id};
                 ",
+                       //This logic gets run each time the query finds a match on the customer Id and the product's customerId. It's essentially a .map
                         (generatedCustomer, generatedProduct) => {
+                            //If the report doesn't contain a key with the customer id, we create a new item in the dictionary 
                             if (!report.ContainsKey(generatedCustomer.Id))
                             {
                                 report[generatedCustomer.Id] = generatedCustomer;
                             }
 
+                            //Here we're adding the product to the customer's product list 
                             report[generatedCustomer.Id].Products.Add(generatedProduct);
 
+                            //We are returning the generated customer here. We aren't using it anywhere, but we have to return something.
                             return generatedCustomer;
                         }
                     );
 
+                    //If everything is successful, we are returning the dictionary that we built
                     return Ok(report);
                 }
 
@@ -117,7 +126,32 @@ namespace BangazonAPI.Controllers
                 {
                     Dictionary<int, Customer> report = new Dictionary<int, Customer>();
 
+                    IEnumerable<Customer> custAndPay = Connection.Query<Customer, PaymentType, Customer>(
+                      $@"
+                    SELECT c.Id,
+                        c.FirstName,
+                        c.LastName,
+                        p.Id,
+                        p.AcctNumber,
+                        p.Name,
+                        p.CustomerId
+                    FROM Customer c
+                    JOIN PaymentType p ON c.Id = p.CustomerId
+                    WHERE c.Id = {id};
+                ",
+                      (generatedCustomer, generatedPaymentType) => {
+                          if (!report.ContainsKey(generatedCustomer.Id))
+                          {
+                              report[generatedCustomer.Id] = generatedCustomer;
+                          }
 
+                          report[generatedCustomer.Id].PaymentTypes.Add(generatedPaymentType);
+
+                          return generatedCustomer;
+                         }
+                      );
+
+                    return Ok(report);
                 }
             }
 
