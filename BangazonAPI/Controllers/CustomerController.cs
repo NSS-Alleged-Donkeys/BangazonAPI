@@ -122,7 +122,7 @@ namespace BangazonAPI.Controllers
                     return Ok(report);
                 }
 
-                if (_include == "payment")
+                if (_include == "payments")
                 {
                     Dictionary<int, Customer> report = new Dictionary<int, Customer>();
 
