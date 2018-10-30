@@ -13,6 +13,7 @@ using Microsoft.AspNetCore.Http;
 namespace BangazonAPI.Controllers
 {
     [Route("api/[controller]")]
+    [ApiController]
     public class ProductController : ControllerBase
     {
         private readonly IConfiguration _config;
@@ -63,7 +64,7 @@ namespace BangazonAPI.Controllers
         }
 
         // GET api/<controller>/5
-        [HttpGet("{id}")]
+        [HttpGet("{id}", Name = "GetProduct")]
         public async Task<IActionResult> Get([FromRoute]int id)
         {
             string sql = $@"
