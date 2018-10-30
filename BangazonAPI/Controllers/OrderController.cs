@@ -90,9 +90,11 @@ namespace BangazonAPI.Controllers
             }
         }
 
-        //GET WORKS
-          
-         //POST Works
+        //4. If the query string parameter of? _include = products is in the URL, then the list of products in the order should be returned.
+
+        
+
+        //POST Works
         // POST api/paymentType
         [HttpPost]
         public async Task<IActionResult> Post([FromBody] Order order)
