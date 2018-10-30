@@ -83,7 +83,7 @@ namespace BangazonAPI.Controllers
             {
 
                 IEnumerable<Product> products = await conn.QueryAsync<Product>(sql);
-                return Ok(products);
+                return Ok(products.Single());
             }
         }
 
