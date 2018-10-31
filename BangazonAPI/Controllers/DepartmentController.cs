@@ -35,13 +35,9 @@ namespace BangazonAPI.Controllers
             using (IDbConnection conn = Connection)
             {
                 string sql = "SELECT * FROM Department";
-                /* if statement including employees */
                 if (_include == "employees")
                 {
-                    /* Creating a dictionary of departments titled "listOfDepartments */
                     Dictionary<int, Department> departmentList = new Dictionary<int, Department>();
-                    /* SQL = this list. dpt = department and e = employee. Includes the properties from each class
-                   The employee has a department ID and that is where the employee and department class join */
                     sql = @"SELECT
                             dpt.Id,
                             dpt.Name,
@@ -53,9 +49,6 @@ namespace BangazonAPI.Controllers
                             e.IsSupervisor
                             FROM Department dpt
                             JOIN Employee e ON dpt.Id = e.DepartmentId";
-                    /* Creating a variable named "departmentEmployees. This is where the dapper magic happens
-                    This is kind of like a foreach loop. It's looking for where the employee and department match and it
-                    is adding that to the dictionary and building it up. */
                     var departmentEmployees = await conn.QueryAsync<Department, Employee, Department>(sql,
                         (department, employee) =>
                         {
@@ -66,7 +59,6 @@ namespace BangazonAPI.Controllers
                             departmentList[department.Id].EmployeeList.Add(employee);
                             return department;
                         });
-                    /* Returning the results of the departmentList */
                     return Ok(departmentList.Values);
                 }
                 /* For finding a budget. Steve asks for something that is greater than 300,000 but we intially did not populate the database with a 
@@ -84,21 +76,40 @@ namespace BangazonAPI.Controllers
         }
         // GET api/department/5
         [HttpGet("{id}", Name = "GetDepartment")]
-        /* Getting a department by an ID */
-        public async Task<IActionResult> Get([FromRoute]int id)
+        /* Getting a department by an ID. I do not need a dictionary for this because I am only looking for a single department. Look at the WHERE in the sql */
+        public async Task<IActionResult> Get([FromRoute]int id, string _include)
         {
             using (IDbConnection conn = Connection)
             {
-                string sql = $@"
-            SELECT
-                dpt.Id,
-                dpt.Name,
-                dpt.Budget
-            FROM Department dpt
-            WHERE dpt.Id = {id}
-            ";
-                var SingleDepartment = (await conn.QueryAsync<Department>(sql)).Single();
-                return Ok(SingleDepartment);
+                string sql = $"SELECT * FROM Department WHERE Id = {id}";
+                Department departmentwithemployees = null;
+                if (_include == "employees")
+                {
+                    sql = $@"SELECT
+                            dpt.Id,
+                            dpt.Name,
+                            dpt.Budget,
+                            e.Id,
+                            e.FirstName,
+                            e.LastName,
+                            e.DepartmentId,                       
+                            e.IsSupervisor
+                            FROM Department dpt
+                            JOIN Employee e ON dpt.Id = e.DepartmentId
+                            WHERE dpt.id = {id}";
+
+                    var departmentEmployees = await conn.QueryAsync<Department, Employee, Department>(sql,
+                            (department, employee) =>
+                            {
+                                if (departmentwithemployees == null)
+                                {
+                                    departmentwithemployees = department;
+                                }
+                                departmentwithemployees.EmployeeList.Add(employee);
+                                return department;
+                            });
+                }
+                return Ok(departmentwithemployees);
             }
         }
         // POST api/department
