@@ -186,24 +186,6 @@ namespace BangazonAPI.Controllers
             }
         }
 
-        // DELETE api/<controller>/5
-        [HttpDelete("{id}")]
-        public async Task<IActionResult> Delete(int id)
-        {
-            string sql = $@"DELETE FROM Employee WHERE Id = {id}";
-
-            using (IDbConnection conn = Connection)
-            {
-                int rowsAffected = await conn.ExecuteAsync(sql);
-                if (rowsAffected > 0)
-                {
-                    return new StatusCodeResult(StatusCodes.Status204NoContent);
-                }
-                throw new Exception("No rows affected");
-            }
-
-        }
-
         private bool EmployeeExists(int id)
         {
             string sql = $"SELECT Id FROM Employee WHERE Id = {id}";
