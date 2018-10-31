@@ -28,8 +28,6 @@ namespace BangazonAPI.Controllers
             }
         }
         [HttpGet]
-        /* Below you need the strings of _include, _filter, and _gt (greater than)
-        This is for the section where I am looking for employees in the departments */
         public async Task<IActionResult> Get(string _include, string _filter, int _gt)
         {
             using (IDbConnection conn = Connection)
@@ -61,30 +59,28 @@ namespace BangazonAPI.Controllers
                         });
                     return Ok(departmentList.Values);
                 }
-                /* For finding a budget. Steve asks for something that is greater than 300,000 but we intially did not populate the database with a 
-               number greater than that. So I put 100,000 */
                 if (_filter == "budget" && _gt >= 100000)
-                /* Looking into the SQL wfrom where the department budget is greater than or equal to 100,000 */
                 {
                     sql = $@"SELECT * FROM Department WHERE Budget >= {_gt}";
                 }
-                /* The variable departmentBudget is using dapper to execute the SQL */
                 var departmentBudget = await conn.QueryAsync<Department>(sql);
-                /* Returning the values */
                 return Ok(departmentBudget);
             }
         }
+
         // GET api/department/5
+        /* Getting a single department. You can see each department and their employees by adding ?_include=employees after the department id */
         [HttpGet("{id}", Name = "GetDepartment")]
-        /* Getting a department by an ID. I do not need a dictionary for this because I am only looking for a single department. Look at the WHERE in the sql */
         public async Task<IActionResult> Get([FromRoute]int id, string _include)
         {
             using (IDbConnection conn = Connection)
             {
                 string sql = $"SELECT * FROM Department WHERE Id = {id}";
-                Department departmentwithemployees = null;
+                
                 if (_include == "employees")
                 {
+                    Department departmentwithemployees = null;
+
                     sql = $@"SELECT
                             dpt.Id,
                             dpt.Name,
@@ -108,9 +104,11 @@ namespace BangazonAPI.Controllers
                                 departmentwithemployees.EmployeeList.Add(employee);
                                 return department;
                             });
+                    return Ok(departmentwithemployees);
                 }
-                return Ok(departmentwithemployees);
-            }
+                var aSingleDepartment = (await conn.QueryAsync<Department>(sql)).Single();
+                return Ok(aSingleDepartment);
+            }   
         }
         // POST api/department
         [HttpPost]
@@ -138,7 +136,7 @@ namespace BangazonAPI.Controllers
             string sql = $@"
             UPDATE Department
             SET Name = '{department.Name}',
-                Budget = '{department.Budget}',
+                Budget = '{department.Budget}'
             WHERE Id = {id}";
             try
             {
