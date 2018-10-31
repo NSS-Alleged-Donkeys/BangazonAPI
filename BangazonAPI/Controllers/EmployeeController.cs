@@ -74,7 +74,7 @@ namespace BangazonAPI.Controllers
                 IEnumerable<Employee> employees = await conn.QueryAsync<Employee, Department, Computer, Employee>(sql, (employee, department, computer) => {
                     if (!CulminatedEmployee.ContainsKey(employee.Id))
                     {
-                        employee.Department = department;
+                        employee.Department = department.Name;
                         employee.Computers = new List<Computer>();
                         CulminatedEmployee[employee.Id] = employee;
                     }
@@ -95,15 +95,33 @@ namespace BangazonAPI.Controllers
                 e.FirstName,
                 e.LastName,
                 e.DepartmentId,
-                e.IsSuperVisor
+                e.IsSuperVisor,
+                d.Id,
+	            d.Name,
+	            d.Budget,
+	            c.Id,
+	            c.PurchaseDate,
+	            c.DecomissionDate
             FROM Employee e
+            JOIN Department d ON e.DepartmentId = d.Id
+            JOIN ComputerEmployee ce ON e.Id = ce.EmployeeId
+            JOIN Computer c ON c.Id = ce.ComputerId
             WHERE e.Id = {id}
             ";
 
             using (IDbConnection conn = Connection)
             {
 
-                IEnumerable<Employee> employees = await conn.QueryAsync<Employee>(sql);
+                IEnumerable<Employee> employees = await conn.QueryAsync<Employee, Department, Computer, Employee>(sql, (employee, department, computer) => {
+                    if (!CulminatedEmployee.ContainsKey(employee.Id))
+                    {
+                        employee.Department = department.Name;
+                        employee.Computers = new List<Computer>();
+                        CulminatedEmployee[employee.Id] = employee;
+                    }
+                    CulminatedEmployee[employee.Id].Computers.Add(computer);
+                    return employee;
+                });
                 return Ok(employees.Single());
             }
         }
