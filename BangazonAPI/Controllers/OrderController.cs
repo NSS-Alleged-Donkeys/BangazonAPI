@@ -10,7 +10,27 @@ using BangazonAPI.Models;
 using Dapper;
 using Microsoft.AspNetCore.Http;
 
+/* Authored By:  Helen Chalmers
+ 
+          Purpose: To allow Developers to access the ORders Table in the Bangazon API DB - Developers should be able to 
+            * Get All of the Order
+            * Get One Order
+            * Get an Order with it's products
+            * Get an order with a customer listed
+            * Post (create) an Order
+            * Put(edit) an Order
+            * Delete an Order and the associated prodcuts on the order (not the products themselves)
+ 
+        1. User should be able to GET a list, and GET a single item. DONE
+        2. When an order is deleted, every line item(i.e.entry in OrderProduct) should be removed DONE
+        3. Should be able to filter out completed orders with the ?completed=false query string parameter.If the parameter value is true, then only completed order should be returned.
+        4. If the query string parameter of? _include = products is in the URL, then the list of products in the order should be returned.
+        5. If the query string parameter of? _include = customer is in the URL, then the customer representation should be included in the response.
+
+*/
 namespace BangazonAPI.Controllers
+
+    //Sets the route and _config variable for the Database Connection
 {
     [Route("api/[controller]")]
     [ApiController]
@@ -31,13 +51,8 @@ namespace BangazonAPI.Controllers
             }
         }
 
-        //1. User should be able to GET a list, and GET a single item. DONE
-        //2. When an order is deleted, every line item(i.e.entry in OrderProduct) should be removed
-        //3. Should be able to filter out completed orders with the ?completed=false query string parameter.If the parameter value is true, then only completed order should be returned.
-        //4. If the query string parameter of? _include = products is in the URL, then the list of products in the order should be returned.
-        //5. If the query string parameter of? _include = customers is in the URL, then the customer representation should be included in the response.
-
-        // GET api/Order?q=Taco
+        
+        // GET -- Returns all orders - api/Order?q=Taco 
         [HttpGet]
         public async Task<IActionResult> Get()
         {
@@ -50,18 +65,7 @@ namespace BangazonAPI.Controllers
             WHERE 1=1
             ";
 
-            /*
-            if (q != null)
-            {
-                string isQ = $@"
-                    AND o.AcctNumber LIKE '%{q}%'
-                    OR pt.Name LIKE '%{q}%'
-                ";
-                sql = $"{sql} {isQ}";
-            }
-            */
-            Console.WriteLine(sql);
-
+          
             using (IDbConnection conn = Connection)
             {
 
@@ -70,7 +74,7 @@ namespace BangazonAPI.Controllers
             }
         }
 
-        // GET api/paymentTypes/5
+        // GET -- Returns Specified Order (by Id given) api/paymentTypes/5
         [HttpGet("{id}", Name = "GetOrder")]
         public async Task<IActionResult> Get([FromRoute]int id)
         {
@@ -88,11 +92,102 @@ namespace BangazonAPI.Controllers
                 IEnumerable<Order> orders = await conn.QueryAsync<Order>(sql);
                 return Ok(orders.Single());
             }
+
         }
+            //3. Should be able to filter out completed orders with the ?completed=false query string parameter.If the parameter value is true, then only completed order should be returned.
+            [HttpGet]
+            public async Task<IActionResult> Get([Fromroute] string completed,  int id, string _include)
 
-        //4. If the query string parameter of? _include = products is in the URL, then the list of products in the order should be returned.
+        {
+             string sql = $@"Select * FROM [Order]"; 
+            using (IDbConnection conn = Connection)
+            if (completed  == "false")
+            {
+                sql += $@"WHERE PaymentType is null";
+                var NotCompletedOrder = await conn.QueryAsync<Order>(sql);
+                return Ok(NotCompletedOrder);
 
+            } else if (completed == "true")
+            {
+                sql += $@"WHERE PaymentType is not null";
+                var CompletedOrder = await conn.QueryAsync<Order>(sql);
+                return Ok(CompletedOrder);
+            }
+            
+
+
+            //4. If the query string parameter of? _include = products is in the URL, then the list of products in the order should be returned.
+            //if _include is not in the route this code won't run
+            if (_include != null)
+            {
+                if(_include == "products")
+                {
+                    Dictionary<int, Order > products = new Dictionary<int, Order>();
+                    IEnumerable<Order> OrdandOrdProdandProd = Connection.Query<Order, Product, Order>(
+                        $@"SELECT o.Id,
+                            o.CustomerId,
+                            o.PaymentTypeId,
+                            op.Id, 
+                            op.OrderId,
+                            op.ProductId,
+                            p.Id,
+                            p.Title
+                        From Order o
+                        JOIN OrderProduct op ON o.Id = op.OrderId
+                        JOIN Product p ON op.ProductId = p.Id  
+                         WHERE 1 = 1; 
+                        ",
+
+                        (generatedOrder, generatedProduct) =>
+                        {
+                            if (!products.ContainsKey(generatedOrder.Id))
+                            {
+                                products[generatedOrder.Id] = generatedOrder;
+                            }
+
+                            products[generatedOrder.Id].productList.Add(generatedProduct);
+                            return generatedOrder;
+                        }
+
+                        );
+                    return Ok(products);
+                }
+                //5. If the query string parameter of? _include = customer is in the URL, then the customer representation should be included in the response.
+                if (_include == "customer")
+                {
+                    using (IDbConnection conn = Connection)
+                        Dictionary<int, Customer> customer = new Dictionary<int, Customer>();
+                            IEnumerable<Order> OrdandCust = Connection.Query<Order, Customer, Order>(
+                            $@"SELECT o.Id,
+                            o.CustomerId,
+                            o.PaymentTypeId,
+                            c.Id,
+                            c.FirstName,
+                            c.LastName
+                        From Order o
+                        JOIN Customer c ON o.CustomerId = c.Id
+                         WHERE 1 = 1; 
+                        ",
+                            (newgeneratedOrder, generatedCustomer) =>
+                            {
+                                if (!OrdandCust.ContainsKey(newgeneratedOrder.Id))
+                                {
+                                    OrdandCust[newgeneratedOrder.Id] = newgeneratedOrder;
+
+                                }
+                                OrdandCust[newgeneratedOrder.Id].Customer.Add
+    
+                            }
+
+                }
+
+            }
+
+        }
         
+
+
+
 
         //POST Works
         // POST api/paymentType
