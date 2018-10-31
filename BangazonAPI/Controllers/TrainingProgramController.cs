@@ -61,26 +61,33 @@ namespace BangazonAPI.Controllers
             }
         }
 
-        // GET api/<controller>/5
+        // GET trainingprogram/2
+        //This GET method will retrieve the information from the database for a singular ID of TrainingProgram
         [HttpGet("{id}", Name = "GetTrainingProgram")]
-        public async Task<IActionResult> Get([FromRoute]int id)
+        public async Task<IActionResult> Get([FromRoute] int id)
         {
-            string sql = $@"
-                SELECT 
-                    tp.Id,
-                    tp.StartDate,
-                    tp.EndDate,
-                    tp.MaxAttendees
-                FROM TrainingProgram TP
-                WHERE p.Id = {id}";
-
             using (IDbConnection conn = Connection)
             {
-
-                IEnumerable<TrainingProgram> trainingprograms = await conn.QueryAsync<TrainingProgram>(sql);
-                return Ok(trainingprograms.Single());
+                string sql = $"Select * FROM TrainingProgram " +
+                        $"LEFT JOIN EmployeeTraining ON TrainingProgram.Id = EmployeeTraining.Id " +
+                        $"LEFT JOIN Employee ON EmployeeTraining.Id = Employee.Id " +
+                        $"WHERE TrainingProgram.Id = {id}";
+                Dictionary<int, TrainingProgram> report = new Dictionary<int, TrainingProgram>();
+                var SingleTrainingProgram = (await conn.QueryAsync<TrainingProgram, Employee, TrainingProgram>(
+                sql, (TrainingProgram, employee) =>
+                {
+                    if (!report.ContainsKey(TrainingProgram.Id))
+                    {
+                        report[TrainingProgram.Id] = TrainingProgram;
+                    }
+                    report[TrainingProgram.Id].EmployeeList.Add(employee);
+                    return TrainingProgram;
+                }, splitOn: "Id"
+                    )).Single();
+                return Ok(report.Values);
             }
         }
+
 
         // POST api/<controller>
         [HttpPost]
