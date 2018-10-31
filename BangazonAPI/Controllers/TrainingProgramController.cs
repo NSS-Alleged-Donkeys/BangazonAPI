@@ -61,55 +61,26 @@ namespace BangazonAPI.Controllers
             }
         }
 
-        //   GET /TrainingProgram?_include=employees
-        //   GET /TrainingProgram?completed=false
-        //This GET method will retrieve the information from the database for TrainingProgram
-        //You can also include employees in the retrieval if you want to see which ones are signed up for the training programs
-        //You can also filter by which training programs have been completed
-        [HttpGet]
-        public async Task<IActionResult> Get(string _include, string completed)
+        // GET api/<controller>/5
+        [HttpGet("{id}", Name = "GetTrainingProgram")]
+        public async Task<IActionResult> Get([FromRoute]int id)
         {
+            string sql = $@"
+                SELECT 
+                    tp.Id,
+                    tp.StartDate,
+                    tp.EndDate,
+                    tp.MaxAttendees
+                FROM TrainingProgram TP
+                WHERE p.Id = {id}";
 
             using (IDbConnection conn = Connection)
             {
 
-                string sql = "Select * from TrainingProgram LEFT JOIN EmployeeTraining ON TrainingProgram.TrainingProgramId = EmployeeTraining.EmployeeTrainingId";
-
-                if (_include != null && _include.Contains("employee"))
-                {
-                    sql = $"Select * FROM TrainingProgram " +
-                        $"LEFT JOIN EmployeeTraining ON TrainingProgram.TrainingProgramId = EmployeeTraining.TrainingProgramId " +
-                        $"LEFT JOIN Employee ON EmployeeTraining.EmployeeId = Employee.EmployeeId ";
-
-                    Dictionary<int, TrainingProgram> report = new Dictionary<int, TrainingProgram>();
-                    var fullTrainingProgram = await conn.QueryAsync<TrainingProgram, Employee, TrainingProgram>(
-                    sql, (trainingProgram, employee) =>
-                    {
-                        // Does the Dictionary already have the key of the Employee?
-                        if (!report.ContainsKey(trainingProgram.TrainingProgramId))
-                        {
-                            // Create the entry in the dictionary
-                            report[trainingProgram.TrainingProgramId] = trainingProgram;
-                        }
-
-                        // Add the Employees to the current TrainingProgram entry in Dictionary
-                        report[trainingProgram.TrainingProgramId].Employees.Add(employee);
-                        return trainingProgram;
-                    }, splitOn: "TrainingProgramId"
-                        );
-                    return Ok(report.Values);
-                }
-                //Checking to see if the Training Program is completed by adding an additional "WHERE" to our sql statement to filter out dates that were in the past from today
-                if (completed == "false")
-                {
-                    DateTime current = DateTime.Today;
-                    sql += $" WHERE TrainingProgram.endDate >= '{current}'";
-                }
-                var trainingPrograms = await conn.QueryAsync<TrainingProgram>(sql);
-                return Ok(trainingPrograms);
+                IEnumerable<TrainingProgram> trainingprograms = await conn.QueryAsync<TrainingProgram>(sql);
+                return Ok(trainingprograms.Single());
             }
         }
-
 
         // POST api/<controller>
         [HttpPost]
