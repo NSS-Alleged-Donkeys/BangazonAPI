@@ -43,8 +43,16 @@ namespace BangazonAPI.Controllers
                 e.FirstName,
                 e.LastName,
                 e.DepartmentId,
-                e.IsSuperVisor
+                e.IsSuperVisor,
+	            d.Name,
+	            d.Budget,
+	            c.Id,
+	            c.PurchaseDate,
+	            c.DecomissionDate
             FROM Employee e
+            JOIN Department d ON e.DepartmentId = d.Id
+            JOIN ComputerEmployee ce ON e.Id = ce.EmployeeId
+            JOIN Computer c ON c.Id = ce.ComputerId
             WHERE 1=1
             ";
 
