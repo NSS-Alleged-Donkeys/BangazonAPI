@@ -33,6 +33,8 @@ namespace BangazonAPI.Controllers
             }
         }
 
+        Dictionary<int, Employee> CulminatedEmployee = new Dictionary<int, Employee>();
+
         // GET: api/<controller>
         [HttpGet]
         public async Task<IActionResult> Get(string q)
@@ -44,6 +46,7 @@ namespace BangazonAPI.Controllers
                 e.LastName,
                 e.DepartmentId,
                 e.IsSuperVisor,
+                d.Id,
 	            d.Name,
 	            d.Budget,
 	            c.Id,
@@ -68,7 +71,16 @@ namespace BangazonAPI.Controllers
             using (IDbConnection conn = Connection)
             {
 
-                IEnumerable<Employee> employees = await conn.QueryAsync<Employee>(sql);
+                IEnumerable<Employee> employees = await conn.QueryAsync<Employee, Department, Computer, Employee>(sql, (employee, department, computer) => {
+                    if (!CulminatedEmployee.ContainsKey(employee.Id))
+                    {
+                        employee.Department = department;
+                        employee.Computers = new List<Computer>();
+                        CulminatedEmployee[employee.Id] = employee;
+                    }
+                    CulminatedEmployee[employee.Id].Computers.Add(computer);
+                    return employee;
+                });
                 return Ok(employees);
             }
         }
