@@ -54,71 +54,9 @@ namespace BangazonAPI.Controllers
 
         // GET -- Returns all orders - api/Order?q=Taco 
         [HttpGet]
-        public async Task<IActionResult> Get(string completed)
+        public async Task<IActionResult> Get(string completed, string _include)
         {
-            string sql = $"Select * FROM [Order]";
-            using (IDbConnection conn = Connection)
-                if (completed == "false")
-                {
-                    sql += $"WHERE [Order].PaymentTypeId IS NULL";
-                    Console.WriteLine(sql);
-                    var NotCompletedOrder = await conn.QueryAsync<Order>(sql);
-                    return Ok(NotCompletedOrder);
-
-                }
-                else if (completed == "true")
-                {
-                    sql += $"WHERE [Order].PaymentTypeId IS NOT NULL";
-                    Console.WriteLine(sql);
-                    var CompletedOrder = await conn.QueryAsync<Order>(sql);
-                    return Ok(CompletedOrder);
-                }
-
-
-            /*string sql = @"
-            SELECT
-                o.Id,
-                o.CustomerId,
-                o.PaymentTypeId
-            FROM [Order] o
-            WHERE 1=1
-            ";
-            */
-
-
-            using (IDbConnection conn = Connection)
-            {
-
-                IEnumerable<Order> orders = await conn.QueryAsync<Order>(sql);
-                return Ok(orders);
-            }
-        }
-
-        // GET -- Returns Specified Order (by Id given) api/paymentTypes/5
-        [HttpGet("{id}", Name = "GetOrder")]
-        public async Task<IActionResult> Get([FromRoute]int id)
-        {
-            string sql = $@"
-            SELECT
-                o.Id,
-                o.CustomerId,
-                o.PaymentTypeId
-            FROM [Order] o
-            WHERE o.Id = {id}
-            ";
-
-            using (IDbConnection conn = Connection)
-            {
-                IEnumerable<Order> orders = await conn.QueryAsync<Order>(sql);
-                return Ok(orders.Single());
-            }
-
-        }
         //3. Should be able to filter out completed orders with the ?completed=false query string parameter.If the parameter value is true, then only completed order should be returned.
-        [HttpGet("{completed}", Name="CompletedOrder")]
-        public async Task<IActionResult> Get( string completed, string _include)
-
-        {
             string sql = $"Select * FROM [Order]";
             using (IDbConnection conn = Connection)
                 if (completed == "false")
@@ -137,12 +75,9 @@ namespace BangazonAPI.Controllers
                     return Ok(CompletedOrder);
                 }
 
-
-
-            //4. If the query string parameter of? _include = products is in the URL, then the list of products in the order should be returned.
-            //if _include is not in the route this code won't run
             if (_include != null)
             {
+                //4. If the query string parameter of? _include = products is in the URL, then the list of products in the order should be returned.
                 if (_include == "products")
                 {
                     Dictionary<int, Order> products = new Dictionary<int, Order>();
@@ -155,9 +90,9 @@ namespace BangazonAPI.Controllers
                             op.ProductId,
                             p.Id,
                             p.Title
-                        From Order o
-                        JOIN OrderProduct op ON o.Id = op.OrderId
-                        JOIN Product p ON op.ProductId = p.Id  
+                        FROM Product p
+                        JOIN OrderProduct op ON p.Id = op.ProductId
+                        JOIN [Order] o ON o.Id = op.OrderId  
                          WHERE 1 = 1; 
                         ",
 
@@ -188,7 +123,7 @@ namespace BangazonAPI.Controllers
                             c.Id,
                             c.FirstName,
                             c.LastName
-                        From Order o
+                        From [Order] o
                         JOIN Customer c ON o.CustomerId = c.Id
                          WHERE 1 = 1; 
                         ",
@@ -201,26 +136,114 @@ namespace BangazonAPI.Controllers
                         }
                         orderDict[newgeneratedOrder.Id].customer = generatedCustomer;
                         return newgeneratedOrder;
-
-
                     }
                     );
+                    return Ok(orderDict);
                 }
-                
-            }
-                using (IDbConnection conn = Connection)
-            {
 
-                IEnumerable<Order> orders = await conn.QueryAsync<Order>(sql);
-                return Ok(orders);
+
+
             }
+
+            using (IDbConnection conn = Connection)
+                {
+
+                    IEnumerable<Order> orders = await conn.QueryAsync<Order>(sql);
+                    return Ok(orders);
+                }
+            
         }
 
+    // GET -- Returns Specified Order (by Id given) api/paymentTypes/5
+    [HttpGet("{id}", Name = "GetOrder")]
+    public async Task<IActionResult> Get([FromRoute]int id, string _include)
+    {
+        string sql = $@"
+            SELECT
+                o.Id,
+                o.CustomerId,
+                o.PaymentTypeId
+            FROM [Order] o
+            WHERE o.Id = {id}
+            ";
+
+            //4. If the query string parameter of? _include = products is in the URL, then the list of products in the order should be returned.
+            if (_include != null)
+            {
+                if (_include == "products")
+                {
+                    Dictionary<int, Order> products = new Dictionary<int, Order>();
+                    IEnumerable<Order> OrdandOrdProdandProd = Connection.Query<Order, Product, Order>(
+                        $@"SELECT o.Id,
+                            o.CustomerId,
+                            o.PaymentTypeId,
+                            op.Id, 
+                            op.OrderId,
+                            op.ProductId,
+                            p.Id,
+                            p.Title
+                        FROM Product p
+                        JOIN OrderProduct op ON p.Id = op.ProductId
+                        JOIN [Order] o ON o.Id = op.OrderId  
+                         WHERE o.Id = {id}; 
+                        ",
+
+                        (generatedOrder, generatedProduct) =>
+                        {
+                            if (!products.ContainsKey(generatedOrder.Id))
+                            {
+                                products[generatedOrder.Id] = generatedOrder;
+                            }
+
+                            products[generatedOrder.Id].productList.Add(generatedProduct);
+                            return generatedOrder;
+                        }
+
+                        );
+                    return Ok(products);
+                }
+                //5. If the query string parameter of? _include = customer is in the URL, then the customer representation should be included in the response.
+                if (_include == "customers")
+                {
+
+                    Dictionary<int, Order> orderDict = new Dictionary<int, Order>();
+
+                    IEnumerable<Order> OrdandCust = Connection.Query<Order, Customer, Order>(
+                    $@"SELECT o.Id,
+                            o.CustomerId,
+                            o.PaymentTypeId,
+                            c.Id,
+                            c.FirstName,
+                            c.LastName
+                        From [Order] o
+                        JOIN Customer c ON o.CustomerId = c.Id
+                         WHERE o.Id = {id}; 
+                        ",
+                    (newgeneratedOrder, generatedCustomer) =>
+                    {
+                        if (!orderDict.ContainsKey(newgeneratedOrder.Id))
+                        {
+                            orderDict[newgeneratedOrder.Id] = newgeneratedOrder;
+
+                        }
+                        orderDict[newgeneratedOrder.Id].customer = generatedCustomer;
+                        return newgeneratedOrder;
+                    }
+                    );
+                    return Ok(orderDict);
+                }
 
 
 
+            }
 
-        //POST Works
+            using (IDbConnection conn = Connection)
+            {
+                IEnumerable<Order> orders = await conn.QueryAsync<Order>(sql);
+                return Ok(orders.Single());
+            }
+    }
+ 
         // POST api/paymentType
         [HttpPost]
         public async Task<IActionResult> Post([FromBody] Order order)
@@ -230,6 +253,7 @@ namespace BangazonAPI.Controllers
             VALUES
             (
                 '{order.CustomerId}'
+                
                 
             );
             SELECT SCOPE_IDENTITY();";
@@ -248,8 +272,7 @@ namespace BangazonAPI.Controllers
         {
             string sql = $@"
             UPDATE [Order]
-            SET CustomerId = '{order.CustomerId}',
-                PaymentTypeId = '{order.PaymentTypeId}'
+            SET PaymentTypeId = '{order.PaymentTypeId}'
             WHERE Id = {id}";
 
             try

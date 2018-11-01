@@ -10,6 +10,16 @@ using BangazonAPI.Models;
 using Dapper;
 using Microsoft.AspNetCore.Http;
 
+/* Authored By:  Helen Chalmers
+        Verbs supported
+GET
+POST
+PUT
+DELETE
+User is able to GET a list, and GET a single item.
+
+ */
+
 namespace BangazonAPI.Controllers
 {
 
