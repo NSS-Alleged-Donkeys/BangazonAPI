@@ -33,7 +33,7 @@ namespace BangazonAPI.Controllers
 
         // GET api/<controller>
         [HttpGet]
-        public async Task<IActionResult> Get(string q)
+        public async Task<IActionResult> Get(string q, string completed)
         {
             string sql = @"
             SELECT 
@@ -51,6 +51,11 @@ namespace BangazonAPI.Controllers
                     OR tp.EndDate LIKE '%{q}%'
                 ";
                 sql = $"{sql} {isQ}";
+            }
+
+            if(completed == "false")
+            {  
+                sql = sql + "AND StartDate > CONVERT(DATETIME,{fn CURDATE()});";
             }
 
             using (IDbConnection conn = Connection)
