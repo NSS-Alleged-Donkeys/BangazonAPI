@@ -33,7 +33,7 @@ namespace BangazonAPI.Controllers
 
         // GET api/<controller>
         [HttpGet]
-        public async Task<IActionResult> Get(string q)
+        public async Task<IActionResult> Get(string q, string completed)
         {
             string sql = @"
             SELECT 
@@ -53,6 +53,11 @@ namespace BangazonAPI.Controllers
                 sql = $"{sql} {isQ}";
             }
 
+            if(completed == "false")
+            {  
+                sql = sql + "AND StartDate > CONVERT(DATETIME,{fn CURDATE()});";
+            }
+
             using (IDbConnection conn = Connection)
             {
 
@@ -61,26 +66,34 @@ namespace BangazonAPI.Controllers
             }
         }
 
-        // GET api/<controller>/5
+        // GET trainingprogram/2
         [HttpGet("{id}", Name = "GetTrainingProgram")]
-        public async Task<IActionResult> Get([FromRoute]int id)
+        public async Task<IActionResult> Get([FromRoute] int id)
         {
-            string sql = $@"
-                SELECT 
-                    tp.Id,
-                    tp.StartDate,
-                    tp.EndDate,
-                    tp.MaxAttendees
-                FROM TrainingProgram TP
-                WHERE p.Id = {id}";
-
             using (IDbConnection conn = Connection)
             {
-
-                IEnumerable<TrainingProgram> trainingprograms = await conn.QueryAsync<TrainingProgram>(sql);
-                return Ok(trainingprograms.Single());
+                /*Joining the EmployeeTraining table w/ the TrainingProgram/Employee table */
+                string sql = $"Select * FROM TrainingProgram " +
+                        $"LEFT JOIN EmployeeTraining ON TrainingProgram.Id = EmployeeTraining.Id " +
+                        $"LEFT JOIN Employee ON EmployeeTraining.Id = Employee.Id " +
+                        $"WHERE TrainingProgram.Id = {id}";
+                /* Adding Employees to the Training Programs */
+                Dictionary<int, TrainingProgram> listOfPrograms = new Dictionary<int, TrainingProgram>();
+                var SingleTrainingProgram = (await conn.QueryAsync<TrainingProgram, Employee, TrainingProgram>(
+                sql, (TrainingProgram, employee) =>
+                {
+                    if (!listOfPrograms.ContainsKey(TrainingProgram.Id))
+                    {
+                        listOfPrograms[TrainingProgram.Id] = TrainingProgram;
+                    }
+                    listOfPrograms[TrainingProgram.Id].EmployeeList.Add(employee);
+                    return TrainingProgram;
+                }, splitOn: "Id"
+                    )).Single();
+                return Ok(listOfPrograms.Values);
             }
         }
+
 
         // POST api/<controller>
         [HttpPost]
@@ -144,7 +157,10 @@ namespace BangazonAPI.Controllers
         [HttpDelete("{id}")]
         public async Task<IActionResult> Delete(int id)
         {
+            /* The CONVERT() function is a general function that converts an expression of one data type to another.
+             * In this case it converts DATETIME into CURDATE (CurrentDate).*/
             string sql = $@"DELETE FROM TrainingProgram WHERE Id = {id}";
+            sql = sql + "AND StartDate > CONVERT(DATETIME,{fn CURDATE()});";
 
             using (IDbConnection conn = Connection)
             {

@@ -106,8 +106,8 @@ namespace BangazonAPI.Controllers
                             });
                     return Ok(departmentwithemployees);
                 }
-                var aSingleDepartment = (await conn.QueryAsync<Department>(sql)).Single();
-                return Ok(aSingleDepartment);
+                var SingleDepartment = (await conn.QueryAsync<Department>(sql)).Single();
+                return Ok(SingleDepartment);
             }   
         }
         // POST api/department
