@@ -10,6 +10,16 @@ using BangazonAPI.Models;
 using Dapper;
 using Microsoft.AspNetCore.Http;
 
+/* Authored By:  Helen Chalmers
+        Verbs supported
+GET
+POST
+PUT
+DELETE
+User is able to GET a list, and GET a single item.
+
+ */
+
 namespace BangazonAPI.Controllers
 {
 
@@ -80,7 +90,7 @@ namespace BangazonAPI.Controllers
             using (IDbConnection conn = Connection)
             {
                 IEnumerable<ProductType> productTypes = await conn.QueryAsync<ProductType>(sql);
-                return Ok(productTypes);
+                return Ok(productTypes.Single());
             }
         }
 

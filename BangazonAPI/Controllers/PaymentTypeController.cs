@@ -10,7 +10,13 @@ using BangazonAPI.Models;
 using Dapper;
 using Microsoft.AspNetCore.Http;
 
+/* Authored By:  Helen Chalmers
+        
+
+ */
+
 namespace BangazonAPI.Controllers
+
 {
     [Route("api/[controller]")]
     [ApiController]
