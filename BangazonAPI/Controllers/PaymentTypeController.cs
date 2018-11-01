@@ -37,7 +37,7 @@ namespace BangazonAPI.Controllers
             }
         }
 
-        // GET api/PaymentType?q=Taco
+        // GET api/Paymenttype?q=Taco
         [HttpGet]
         public async Task<IActionResult> Get(string q)
         {
@@ -70,7 +70,7 @@ namespace BangazonAPI.Controllers
             }
         }
 
-        // GET api/paymentTypes/5
+        // GET api/paymenttype/5
         [HttpGet("{id}", Name = "GetPayment")]
         public async Task<IActionResult> Get([FromRoute]int id)
         {
@@ -91,7 +91,7 @@ namespace BangazonAPI.Controllers
             }
         }
 
-        // POST api/paymentType
+        // POST api/paymenttype
         [HttpPost]
         public async Task<IActionResult> Post([FromBody] PaymentType paymentType)
         {
@@ -113,7 +113,7 @@ namespace BangazonAPI.Controllers
             }
         }
 
-        // PUT api/paymentType/5
+        // PUT api/paymenttype/5
         [HttpPut("{id}")]
         public async Task<IActionResult> Put(int id, [FromBody] PaymentType paymentType)
         {
@@ -149,7 +149,7 @@ namespace BangazonAPI.Controllers
             }
         }
 
-        // DELETE api/paymentType/5
+        // DELETE api/paymenttype/5
         [HttpDelete("{id}")]
         public async Task<IActionResult> Delete(int id)
         {

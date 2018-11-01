@@ -1,4 +1,4 @@
-/*
+
 DELETE FROM OrderProduct;
 DELETE FROM ComputerEmployee;
 DELETE FROM EmployeeTraining;
@@ -39,7 +39,7 @@ DROP TABLE IF EXISTS PaymentType;
 DROP TABLE IF EXISTS Product;
 DROP TABLE IF EXISTS ProductType;
 DROP TABLE IF EXISTS Customer;
-*/
+
 
 
 CREATE TABLE Department (
@@ -173,9 +173,9 @@ VALUES ('Deus Ex Machinas');
 INSERT INTO ProductType ([Name])
 VALUES ('Widgets');
 INSERT INTO Customer (FirstName,LastName)
-VALUES('Jose', 'Cuervo');
+VALUES('Steve', 'Jobs');
 INSERT INTO Customer (FirstName,LastName)
-VALUES('Don', 'Juan');
+VALUES('George', 'Washington');
 INSERT INTO Product (ProductTypeId, CustomerId, Price, Title, [Description], Quantity)
 VALUES (1, 1, 500, 'Instant Csharp Learning', 'Matrix like jack-in to learn csharp', 1);
 INSERT INTO Product (ProductTypeId, CustomerId, Price, Title, [Description], Quantity)
@@ -194,3 +194,13 @@ INSERT INTO OrderProduct (OrderId, ProductId)
 VALUES (1, 1);
 INSERT INTO OrderProduct (OrderId, ProductId)
 VALUES (2, 2);
+
+SELECT
+c.Id,
+c.FirstName,
+o.CustomerId
+FROM Customer c
+LEFT JOIN [Order] o ON c.Id = o.CustomerId
+WHERE o.CustomerId IS NULL
+
+

@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using BangazonAPI;
 
 namespace BangazonAPI.Models
 {
@@ -10,6 +11,6 @@ namespace BangazonAPI.Models
         public Customer customer { get; set; }
         public int? PaymentTypeId { get; set; }
         public List<Product> productList = new List<Product>();
-
     }
+
 }

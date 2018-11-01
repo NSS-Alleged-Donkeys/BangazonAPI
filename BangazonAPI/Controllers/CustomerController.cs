@@ -33,7 +33,7 @@ namespace BangazonAPI.Controllers
 
         // GET api/Customer?q=Taco
         [HttpGet]
-        public async Task<IActionResult> Get(string q)
+        public async Task<IActionResult> Get(string q, string active)
         {
             string sql = @"
             SELECT
@@ -53,11 +53,26 @@ namespace BangazonAPI.Controllers
                 sql = $"{sql} {isQ}";
             }
 
-            Console.WriteLine(sql);
+            //Select  all customers
+            //Left join customers and orders
+            //where those are null
+            if (active == "false")
+            {
+                string isQ = $@"
+                    SELECT
+                        c.Id,
+                        c.FirstName,
+                        c.LastName,
+                        o.CustomerId
+                        FROM Customer c
+                        LEFT JOIN [Order] o ON c.Id = o.CustomerId
+                        WHERE o.CustomerId IS NULL
+                ";
+                sql = $"{isQ}";
+            }
 
             using (IDbConnection conn = Connection)
             {
-
                 IEnumerable<Customer> customer = await conn.QueryAsync<Customer>(sql);
                 return Ok(customer);
             }
@@ -160,8 +175,7 @@ namespace BangazonAPI.Controllers
                 IEnumerable<Customer> customer = await conn.QueryAsync<Customer>(sql);
                 return Ok(customer);
             }
-
-
+            
         }
 
         // POST api/Customer
